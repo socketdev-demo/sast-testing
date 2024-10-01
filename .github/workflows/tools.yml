@@ -1,0 +1,85 @@
+name: Security Scanning Workflow
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  run-security-tools:
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Python and install Bandit
+      - name: Set up Python and install Bandit
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install Bandit
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit
+
+      # Step 3: Run Bandit (Python static analysis)
+      - name: Run Bandit (Python SAST)
+        run: |
+          bandit -r . -f json -o bandit_output.json
+        id: bandit
+
+      # Step 4: Set up Go and install Gosec
+      - name: Set up Go and install Gosec
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.x'
+      - name: Install Gosec
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+
+      # Step 5: Run Gosec (Go static analysis)
+      - name: Run Gosec (Go SAST)
+        run: |
+          gosec ./... -fmt=json -out=gosec_output.json
+        id: gosec
+
+      # Step 6: Run TruffleHog (Secret scanning)
+      - name: Run TruffleHog
+        run: |
+          trufflehog --json --directory . > trufflehog_output.json
+        id: trufflehog
+
+      # Step 7: Install and run Trivy (Container and system scanning)
+      - name: Install Trivy
+        run: |
+          sudo apt-get install -y wget
+          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.40.0_Linux-64bit.deb
+          sudo dpkg -i trivy_0.40.0_Linux-64bit.deb
+      - name: Run Trivy
+        run: |
+          trivy fs --format json --output trivy_output.json .
+        id: trivy
+
+      # Step 8: Process JSON results from all tools
+      - name: Process JSON outputs
+        run: |
+          # Read the JSON output from each tool
+          BANDIT_RESULT=$(cat bandit_output.json)
+          GOSEC_RESULT=$(cat gosec_output.json)
+          TRUFFLEHOG_RESULT=$(cat trufflehog_output.json)
+          TRIVY_RESULT=$(cat trivy_output.json)
+
+          # Use jq to combine or process the JSON from different tools
+          FINAL_RESULT=$(jq -n --argjson bandit "$BANDIT_RESULT" --argjson gosec "$GOSEC_RESULT" --argjson trufflehog "$TRUFFLEHOG_RESULT" --argjson trivy "$TRIVY_RESULT" \
+          '{"bandit": $bandit, "gosec": $gosec, "trufflehog": $trufflehog, "trivy": $trivy}')
+
+          echo "Final Combined Result: $FINAL_RESULT"
+
+          # Optionally write the combined result to a file
+          echo "$FINAL_RESULT" > final_result.json
+
+      # Step 9: Display the final combined result (optional)
+      - name: Display final combined result
+        run: |
+          cat final_result.json
