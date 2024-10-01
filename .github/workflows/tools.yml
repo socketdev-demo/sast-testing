@@ -42,28 +42,34 @@ jobs:
       # Step 5: Run Gosec (Go static analysis) and suppress non-zero exit code
       - name: Run Gosec (Go SAST)
         run: |
-          gosec ./... -fmt=json -out=gosec_output.json
+          gosec -fmt=json -out=gosec_output.json ./...
         continue-on-error: true
         id: gosec
 
-      # Step 6: Run TruffleHog (Secret scanning) and suppress non-zero exit code
+      # Step 6: Install and run TruffleHog (Secret scanning)
+      - name: Install TruffleHog
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b /usr/local/bin
+      
       - name: Run TruffleHog
         run: |
-          trufflehog --json --directory . > trufflehog_output.json
+          trufflehog filesystem --no-verification -j .  > trufflehog_output.json
         continue-on-error: true
         id: trufflehog
+
 
       # Step 7: Install and run Trivy (Container and system scanning)
       - name: Install Trivy
         run: |
-          sudo apt-get install -y wget
-          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.40.0_Linux-64bit.deb
-          sudo dpkg -i trivy_0.40.0_Linux-64bit.deb
-
-      # Step 8: Run Trivy (Container scanning) and suppress non-zero exit code
-      - name: Run Trivy
+          sudo apt-get update
+          sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo tee /etc/apt/trusted.gpg.d/trivy.asc
+          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
+      - name: Run Trivy (Disable secret scanning)
         run: |
-          trivy fs --format json --output trivy_output.json .
+          trivy fs --security-checks vuln,config --format json --output trivy_output.json .
         continue-on-error: true
         id: trivy
 
@@ -75,17 +81,19 @@ jobs:
           GOSEC_RESULT=$(cat gosec_output.json)
           TRUFFLEHOG_RESULT=$(cat trufflehog_output.json)
           TRIVY_RESULT=$(cat trivy_output.json)
+          echo "Bandit"
+          echo $BANDIT_RESULT
+          echo "Gosec"
+          echo $GOSEC_RESULT
+          echo "Trufflehog"
+          echo $TRUFFLEHOG_RESULT
+          echo "Trivy"
+          echo $TRIVY_RESULT
 
           # Use jq to combine or process the JSON from different tools
-          FINAL_RESULT=$(jq -n --argjson bandit "$BANDIT_RESULT" --argjson gosec "$GOSEC_RESULT" --argjson trufflehog "$TRUFFLEHOG_RESULT" --argjson trivy "$TRIVY_RESULT" \
-          '{"bandit": $bandit, "gosec": $gosec, "trufflehog": $trufflehog, "trivy": $trivy}')
+          # FINAL_RESULT=$(jq -n --argjson bandit "$BANDIT_RESULT" --argjson gosec "$GOSEC_RESULT" --argjson trufflehog "$TRUFFLEHOG_RESULT" --argjson trivy "$TRIVY_RESULT" '{"bandit": $bandit, "gosec": $gosec, "trufflehog": $trufflehog, "trivy": $trivy}')
 
-          echo "Final Combined Result: $FINAL_RESULT"
+          # echo "Final Combined Result: $FINAL_RESULT"
 
           # Optionally write the combined result to a file
-          echo "$FINAL_RESULT" > final_result.json
-
-      # Step 10: Display the final combined result (optional)
-      - name: Display final combined result
-        run: |
-          cat final_result.json
+          # echo "$FINAL_RESULT" > final_result.json
