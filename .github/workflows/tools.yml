@@ -81,17 +81,19 @@ jobs:
           GOSEC_RESULT=$(cat gosec_output.json)
           TRUFFLEHOG_RESULT=$(cat trufflehog_output.json)
           TRIVY_RESULT=$(cat trivy_output.json)
+          echo "Bandit"
+          echo $BANDIT_RESULT
+          echo "Gosec"
+          echo $GOSEC_RESULT
+          echo "Trufflehog"
+          echo $TRUFFLEHOG_RESULT
+          echo "Trivy"
+          echo $TRIVY_RESULT
 
           # Use jq to combine or process the JSON from different tools
-          FINAL_RESULT=$(jq -n --argjson bandit "$BANDIT_RESULT" --argjson gosec "$GOSEC_RESULT" --argjson trufflehog "$TRUFFLEHOG_RESULT" --argjson trivy "$TRIVY_RESULT" \
-          '{"bandit": $bandit, "gosec": $gosec, "trufflehog": $trufflehog, "trivy": $trivy}')
+          # FINAL_RESULT=$(jq -n --argjson bandit "$BANDIT_RESULT" --argjson gosec "$GOSEC_RESULT" --argjson trufflehog "$TRUFFLEHOG_RESULT" --argjson trivy "$TRIVY_RESULT" '{"bandit": $bandit, "gosec": $gosec, "trufflehog": $trufflehog, "trivy": $trivy}')
 
-          echo "Final Combined Result: $FINAL_RESULT"
+          # echo "Final Combined Result: $FINAL_RESULT"
 
           # Optionally write the combined result to a file
-          echo "$FINAL_RESULT" > final_result.json
-
-      # Step 10: Display the final combined result (optional)
-      - name: Display final combined result
-        run: |
-          cat final_result.json
+          # echo "$FINAL_RESULT" > final_result.json
