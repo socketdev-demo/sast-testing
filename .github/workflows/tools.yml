@@ -42,7 +42,7 @@ jobs:
       # Step 5: Run Gosec (Go static analysis) and suppress non-zero exit code
       - name: Run Gosec (Go SAST)
         run: |
-          gosec ./... -fmt=json -out=gosec_output.json
+          gosec -fmt=json -out=gosec_output.json ./...
         continue-on-error: true
         id: gosec
 
