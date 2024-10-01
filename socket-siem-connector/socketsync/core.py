@@ -216,8 +216,6 @@ class Core:
         commits = []
         for raw_report in raw_reports:
             report = Report(**raw_report)
-            if report.repository_id not in repos:
-                repo_data = socket.repositories.
             if report_id is not None and report_id == report.id:
                 reports.append(report)
             elif report_id is None:
