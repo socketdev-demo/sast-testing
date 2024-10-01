@@ -23,10 +23,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install bandit
 
-      # Step 3: Run Bandit (Python static analysis)
+      # Step 3: Run Bandit (Python static analysis) and suppress non-zero exit code
       - name: Run Bandit (Python SAST)
         run: |
           bandit -r . -f json -o bandit_output.json
+        continue-on-error: true
         id: bandit
 
       # Step 4: Set up Go and install Gosec
@@ -38,16 +39,18 @@ jobs:
         run: |
           go install github.com/securego/gosec/v2/cmd/gosec@latest
 
-      # Step 5: Run Gosec (Go static analysis)
+      # Step 5: Run Gosec (Go static analysis) and suppress non-zero exit code
       - name: Run Gosec (Go SAST)
         run: |
           gosec ./... -fmt=json -out=gosec_output.json
+        continue-on-error: true
         id: gosec
 
-      # Step 6: Run TruffleHog (Secret scanning)
+      # Step 6: Run TruffleHog (Secret scanning) and suppress non-zero exit code
       - name: Run TruffleHog
         run: |
           trufflehog --json --directory . > trufflehog_output.json
+        continue-on-error: true
         id: trufflehog
 
       # Step 7: Install and run Trivy (Container and system scanning)
@@ -56,12 +59,15 @@ jobs:
           sudo apt-get install -y wget
           wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.40.0_Linux-64bit.deb
           sudo dpkg -i trivy_0.40.0_Linux-64bit.deb
+
+      # Step 8: Run Trivy (Container scanning) and suppress non-zero exit code
       - name: Run Trivy
         run: |
           trivy fs --format json --output trivy_output.json .
+        continue-on-error: true
         id: trivy
 
-      # Step 8: Process JSON results from all tools
+      # Step 9: Process JSON results from all tools
       - name: Process JSON outputs
         run: |
           # Read the JSON output from each tool
@@ -79,7 +85,7 @@ jobs:
           # Optionally write the combined result to a file
           echo "$FINAL_RESULT" > final_result.json
 
-      # Step 9: Display the final combined result (optional)
+      # Step 10: Display the final combined result (optional)
       - name: Display final combined result
         run: |
           cat final_result.json
