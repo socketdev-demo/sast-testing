@@ -54,7 +54,7 @@ jobs:
       
       - name: Run TruffleHog
         run: |
-          trufflehog --json --directory . > trufflehog_output.json
+          trufflehog filesystem --no-verification -j . > trufflehog_output.json
         continue-on-error: true
         id: trufflehog
 
