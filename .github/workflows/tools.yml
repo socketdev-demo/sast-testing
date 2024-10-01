@@ -35,17 +35,37 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.x'
-      - name: Install Gosec
+      
+      - name: Install Go dependencies
         run: |
+          # Enable Go modules
+          export GO111MODULE=on
           go mod tidy
           go mod download
-
-      # Step 5: Run Gosec (Go static analysis)
-      - name: Run Gosec (Go SAST)
+      
+      # Step 5: Build Go Project (Check for Go files)
+      - name: Build Go Project (Check for Go files)
+        run: |
+          go build ./... || echo "Build failed but continuing to run Gosec"
+      
+      # Step 6: Run Gosec (Go SAST) with the correct parameter order
+      - name: Run Gosec (Go static analysis)
         run: |
           gosec -fmt=json -out=gosec_output.json ./...
-        continue-on-error: true
         id: gosec
+        continue-on-error: true
+      
+      # Step 7: Check if Gosec output file exists and log errors
+      - name: Debug Gosec Output (Check if file was created)
+        run: |
+          if [ -f gosec_output.json ]; then
+            echo "Gosec JSON output found"
+            cat gosec_output.json
+          else
+            echo "Gosec output file not found, printing possible errors:"
+            cat gosec_error.log || echo "No error log found."
+          fi
+
 
       # Step 6: Install and run TruffleHog (Secret scanning) with corrected command
       - name: Install TruffleHog
