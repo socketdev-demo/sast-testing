@@ -1,12 +1,13 @@
 name: Security Scanning Workflow
 on:
-  push:
-    branches:
-      - main
   pull_request:
-
+    types: [opened, syncronize]
 jobs:
   run-security-tools:
+    permissions:
+      issues: write
+      contents: read
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
       # Step 1: Checkout the code
@@ -73,27 +74,7 @@ jobs:
         continue-on-error: true
         id: trivy
 
-      # Step 9: Process JSON results from all tools
-      - name: Process JSON outputs
-        run: |
-          # Read the JSON output from each tool
-          BANDIT_RESULT=$(cat bandit_output.json)
-          GOSEC_RESULT=$(cat gosec_output.json)
-          TRUFFLEHOG_RESULT=$(cat trufflehog_output.json)
-          TRIVY_RESULT=$(cat trivy_output.json)
-          echo "Bandit"
-          echo $BANDIT_RESULT
-          echo "Gosec"
-          echo $GOSEC_RESULT
-          echo "Trufflehog"
-          echo $TRUFFLEHOG_RESULT
-          echo "Trivy"
-          echo $TRIVY_RESULT
-
-          # Use jq to combine or process the JSON from different tools
-          # FINAL_RESULT=$(jq -n --argjson bandit "$BANDIT_RESULT" --argjson gosec "$GOSEC_RESULT" --argjson trufflehog "$TRUFFLEHOG_RESULT" --argjson trivy "$TRIVY_RESULT" '{"bandit": $bandit, "gosec": $gosec, "trufflehog": $trufflehog, "trivy": $trivy}')
-
-          # echo "Final Combined Result: $FINAL_RESULT"
-
-          # Optionally write the combined result to a file
-          # echo "$FINAL_RESULT" > final_result.json
+      - name: Run Custom Python Script
+        run: python socket_external_tools_runner.py
+        env:
+          GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
