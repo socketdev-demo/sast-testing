@@ -75,6 +75,6 @@ jobs:
         id: trivy
 
       - name: Run Custom Python Script
-        run: python tools/socket_external_tools_runner.py
+        run: python tool/socket_external_tools_runner.py
         env:
           GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
