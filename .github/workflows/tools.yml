@@ -7,7 +7,8 @@ jobs:
   security-scan:
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write  # Set required permissions here
+      pull-requests: write
+      contents: read
 
     steps:
       - name: Checkout code
