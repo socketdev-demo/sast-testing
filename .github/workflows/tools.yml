@@ -75,7 +75,7 @@ jobs:
         id: trivy
 
       - name: Install Socket External Tools Requirements
-        run: pip install -r tool/requirement.txt
+        run: pip install -r tool/requirements.txt
 
       - name: Run Socket External Tools Script
         run: python tool/socket_external_tools_runner.py
