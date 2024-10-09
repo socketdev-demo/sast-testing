@@ -1,83 +1,24 @@
-name: Security Scanning Workflow
+name: Security Scan Workflow
 on:
   pull_request:
     types: [opened, syncronize]
+
 jobs:
-  run-security-tools:
-    permissions:
-      issues: write
-      contents: read
-      pull-requests: write
+  security-scan:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write  # Set required permissions here
+
     steps:
-      # Step 1: Checkout the code
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
 
-      # Step 2: Set up Python and install Bandit
-      - name: Set up Python and install Bandit
-        uses: actions/setup-python@v4
+      - name: Run Security Scan and Comment Action
+        uses: dacoburn/security-tools@v1.0.1
         with:
-          python-version: '3.x'
-      - name: Install Bandit
-        run: |
-          python -m pip install --upgrade pip
-          pip install bandit
-
-      # Step 3: Run Bandit (Python static analysis) and suppress non-zero exit code
-      - name: Run Bandit (Python SAST)
-        run: |
-          bandit -r . -f json -o bandit_output.json
-        continue-on-error: true
-        id: bandit
-
-      # Step 4: Set up Go and install Gosec
-      - name: Set up Go and install Gosec
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.x'
-      - name: Install Gosec
-        run: |
-          go install github.com/securego/gosec/v2/cmd/gosec@latest
-
-      # Step 5: Run Gosec (Go static analysis) and suppress non-zero exit code
-      - name: Run Gosec (Go SAST)
-        run: |
-          gosec -fmt=json -out=gosec_output.json ./...
-        continue-on-error: true
-        id: gosec
-
-      # Step 6: Install and run TruffleHog (Secret scanning)
-      - name: Install TruffleHog
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b /usr/local/bin
-      
-      - name: Run TruffleHog
-        run: |
-          trufflehog filesystem --no-verification -j .  > trufflehog_output.json
-        continue-on-error: true
-        id: trufflehog
-
-
-      # Step 7: Install and run Trivy (Container and system scanning)
-      - name: Install Trivy
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget apt-transport-https gnupg lsb-release
-          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo tee /etc/apt/trusted.gpg.d/trivy.asc
-          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee /etc/apt/sources.list.d/trivy.list
-          sudo apt-get update
-          sudo apt-get install -y trivy
-      - name: Run Trivy (Disable secret scanning)
-        run: |
-          trivy fs --security-checks vuln,config --format json --output trivy_output.json .
-        continue-on-error: true
-        id: trivy
-
-      - name: Install Socket External Tools Requirements
-        run: pip install -r tool/requirements.txt
-
-      - name: Run Socket External Tools Script
-        run: python tool/socket_external_tools_runner.py
-        env:
-          GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          trufflehog_exclude_dir: "node_modules/*,vendor,.git/*"
+          bandit_exclude_dir: "tests,migrations,tests,test,.venv,venv"
+          bandit_rules: "B101,B102,B105,B106,B107,B110,B603,B605,B607"
+          gosec_rules: "critical,high,medium"
+          trivy_exclude_dir: "/path/to/ignore"
