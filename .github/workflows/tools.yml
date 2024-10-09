@@ -1,7 +1,7 @@
 name: Security Scan Workflow
 on:
   pull_request:
-    types: [opened, syncronize]
+    types: [opened, synchronize, edited]
 
 jobs:
   security-scan:
