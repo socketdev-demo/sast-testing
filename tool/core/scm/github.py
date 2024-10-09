@@ -8,7 +8,15 @@ repo: Repository
 pull_request: PullRequest
 timeout = 30
 repo_name = os.getenv("GITHUB_REPOSITORY")
-pr_number = os.getenv("GITHUB_EVENT_PULL_REQUEST_NUMBER")
+# Load the event data to get the pull request number
+event_path = os.getenv("GITHUB_EVENT_PATH")
+with open(event_path, 'r') as f:
+    event_data = json.load(f)
+# Extract the pull request number from the event data
+pr_number = event_data["number"] if "pull_request" in event_data else None
+if pr_number is None:
+    log.warn("Unable to get PR number from event data, assuming not a PR")
+    exit(0)
 commit_sha = os.getenv("GITHUB_SHA")
 gh_api_token = os.getenv("GH_API_TOKEN")
 working_directory = os.getenv("GITHUB_WORKSPACE")
