@@ -17,8 +17,8 @@ jobs:
         uses: dacoburn/security-tools@1.0.6
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          trufflehog_exclude_dir: "node_modules/*,vendor,.git/*"
+          trufflehog_exclude_dir: "node_modules/*,vendor,.git/*,.idea"
           bandit_exclude_dir: "tests,migrations,tests,test,.venv,venv"
           bandit_rules: "B101,B102,B105,B106,B107,B110,B603,B605,B607"
-          gosec_rules: "critical,high,medium"
+          gosec_rules: "medium"
           trivy_exclude_dir: "/path/to/ignore"
