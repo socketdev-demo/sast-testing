@@ -11,8 +11,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
-
+        uses: actions/checkout@v4.2.1
       - name: Run Security Scan and Comment Action
         uses: dacoburn/security-tools@1.0.3
         with:
